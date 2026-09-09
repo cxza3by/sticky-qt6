@@ -3,8 +3,8 @@
 A minimalist sticky-note app that stays on top of other windows.
 Built with **C++ + Qt6**.
 
-![Qt](https://img.shields.io/badge/Qt-6-blue?logo=qt)
-[![GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-green.svg)](LICENSE)
+![Qt](https://img.shields.io/badge/Qt-6-blue?logo=qt?style=for-the-badge)
+[![GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-green.svg?style=for-the-badge)](LICENSE)
 
 ## Possibilities
 
