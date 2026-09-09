@@ -1,0 +1,194 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+env:
+  CMAKE_BUILD_TYPE: Release
+
+jobs:
+  cpp-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y cmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev qt6-base-dev libqt6widgets6
+      - name: Build C++
+        working-directory: src/cpp
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
+          cmake --build build
+      - name: Upload binary
+        uses: actions/upload-artifact@v5
+        with:
+          name: Sticky-Bin-${{ matrix.os }}
+          path: src/cpp/build/sticky
+          retention-days: 7
+
+  package-bin:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build deps
+        run: |
+          sudo apt update
+          sudo apt install -y cmake libgl1-mesa-dev libglu1-mesa-dev qt6-base-dev libqt6widgets6
+      - name: Build
+        working-directory: src/cpp
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+      - name: Rename binary
+        run: mv src/cpp/build/sticky src/cpp/build/sticky-1.0.0.bin
+      - name: Upload .bin
+        uses: actions/upload-artifact@v5
+        with:
+          name: pkg-bin
+          path: src/cpp/build/sticky-1.0.0.bin
+          retention-days: 7
+
+  package-arch:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build deps
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm cmake qt6-base
+      - name: Build on Arch
+        working-directory: src/cpp
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build
+      - name: Create .pkg.tar.zst
+        run: |
+          PKGDIR="$PWD/pkgdir"
+          mkdir -p "$PKGDIR"
+          cmake --install src/cpp/build --prefix "$PKGDIR/usr"
+          mkdir -p "$PKGDIR/usr/share/licenses/sticky"
+          cp LICENSE "$PKGDIR/usr/share/licenses/sticky/"
+          BUILD_DATE=$(date +%s)
+          PKG_SIZE=$(du -sb "$PKGDIR" | awk '{print $1}')
+          {
+            printf 'pkgname = sticky\n'
+            printf 'pkgver = 1.0.0-1\n'
+            printf 'pkgdesc = Simple sticky notes application\n'
+            printf 'url = https://github.com/cxza3by/Sticky\n'
+            printf 'builddate = %s\n' "$BUILD_DATE"
+            printf 'packager = cxza3by <cxza3by@gmail.com>\n'
+            printf 'arch = x86_64\n'
+            printf 'size = %s\n' "$PKG_SIZE"
+            printf 'license = GPL-3.0\n'
+            printf 'depend = qt6-base\n'
+          } > "$PKGDIR/.PKGINFO"
+          bsdtar -czf "$PKGDIR/.MTREE" --format=mtree --options='!all,use-set,type,uid,gid,mode,time,size,sha256,link' -C "$PKGDIR" .
+          PKGNAME="sticky-1.0.0-x86_64"
+          tar -c --zstd -f "${PKGNAME}.pkg.tar.zst" -C "$PKGDIR" .
+          mv "${PKGNAME}.pkg.tar.zst" src/cpp/build/
+      - name: Upload .pkg.tar.zst
+        uses: actions/upload-artifact@v5
+        with:
+          name: pkg-arch-zst
+          path: src/cpp/build/sticky-1.0.0-x86_64.pkg.tar.zst
+          retention-days: 7
+
+  package-deb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build deps
+        run: |
+          sudo apt update
+          sudo apt install -y cmake libgl1-mesa-dev libglu1-mesa-dev qt6-base-dev libqt6widgets6
+      - name: Build DEB
+        working-directory: src/cpp
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCPACK_PACKAGE_SUFFIX=-qt6
+          cmake --build build
+          cd build && cpack -G DEB
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: pkg-deb
+          path: "src/cpp/build/*.deb"
+          retention-days: 7
+
+  package-rpm:
+    runs-on: ubuntu-24.04
+    container:
+      image: fedora:latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install build deps
+        run: |
+          dnf install -y cmake gcc-c++ make rpm-build mesa-libGL-devel mesa-libGLU-devel qt6-qtbase-devel
+      - name: Build RPM
+        working-directory: src/cpp
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release -DCPACK_PACKAGE_SUFFIX=-qt6
+          cmake --build build
+          cd build && cpack -G RPM
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: pkg-rpm
+          path: "src/cpp/build/*.rpm"
+          retention-days: 7
+
+  publish-release:
+    name: Create GitHub Release
+    needs: [package-deb, package-rpm, package-bin, package-arch]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Create release directory
+        run: mkdir -p release-files
+
+      - name: Download DEB
+        uses: actions/download-artifact@v5
+        with:
+          name: pkg-deb
+          path: release-files
+
+      - name: Download RPM
+        uses: actions/download-artifact@v5
+        with:
+          name: pkg-rpm
+          path: release-files
+
+      - name: Download .bin
+        uses: actions/download-artifact@v5
+        with:
+          name: pkg-bin
+          path: release-files
+
+      - name: Download Arch .pkg.tar.zst
+        uses: actions/download-artifact@v5
+        with:
+          name: pkg-arch-zst
+          path: release-files
+
+      - name: Upload Files to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/**/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

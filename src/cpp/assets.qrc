@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="sticky.png">../assets/sticky.png</file>
+    </qresource>
+</RCC>

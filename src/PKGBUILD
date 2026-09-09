@@ -1,0 +1,26 @@
+# Maintainer: cxza3by <cxza3by@gmail.com>
+pkgname=sticky
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Simple sticky notes application — always on top, multiple tabs, dark mode"
+arch=('x86_64')
+url="https://github.com/cxza3by/Sticky"
+license=('GPL3')
+depends=('qt6-base')
+makedepends=('cmake' 'gcc')
+source=("$pkgname-$pkgver.tar.gz::https://github.com/cxza3by/Sticky/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "$srcdir/Sticky-$pkgver/src/cpp"
+  cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build
+}
+
+package() {
+  cd "$srcdir/Sticky-$pkgver/src/cpp"
+  cmake --install build --prefix "$pkgdir/usr"
+
+  install -Dm644 "$srcdir/Sticky-$pkgver/LICENSE" \
+    "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

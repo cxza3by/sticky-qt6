@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Drop shadow -->
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="6" dy="8" stdDeviation="8" flood-opacity="0.25"/>
+    </filter>
+    <linearGradient id="noteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFF59D"/>
+      <stop offset="100%" stop-color="#FFD54F"/>
+    </linearGradient>
+    <linearGradient id="foldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F9A825"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Main note body with folded corner -->
+  <g filter="url(#shadow)">
+    <!-- Note body (square minus folded corner) -->
+    <path d="M 28 28 L 196 28 L 228 60 L 228 228 L 28 228 Z"
+          fill="url(#noteGrad)" stroke="#F57F17" stroke-width="2"/>
+
+    <!-- Folded corner -->
+    <path d="M 196 28 L 228 60 L 196 60 Z"
+          fill="url(#foldGrad)" stroke="#F57F17" stroke-width="2" stroke-linejoin="round"/>
+
+    <!-- Text lines -->
+    <line x1="56" y1="96"  x2="180" y2="96"  stroke="#5D4037" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+    <line x1="56" y1="136" x2="180" y2="136" stroke="#5D4037" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+    <line x1="56" y1="176" x2="140" y2="176" stroke="#5D4037" stroke-width="6" stroke-linecap="round" opacity="0.5"/>
+  </g>
+</svg>
