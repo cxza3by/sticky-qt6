@@ -80,7 +80,7 @@ jobs:
 
   publish-release:
     name: Create GitHub Release
-    needs: [package-deb, package-rpm, package-bin, package-arch]
+    needs: [package-deb, package-rpm, package-bin]
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
     permissions:
@@ -92,13 +92,13 @@ jobs:
       - name: Create release directory
         run: mkdir -p release-files
 
-      - name: Download DEB
+      - name: Download .deb
         uses: actions/download-artifact@v5
         with:
           name: pkg-deb
           path: release-files
 
-      - name: Download RPM
+      - name: Download .rpm
         uses: actions/download-artifact@v5
         with:
           name: pkg-rpm
@@ -108,12 +108,6 @@ jobs:
         uses: actions/download-artifact@v5
         with:
           name: pkg-bin
-          path: release-files
-
-      - name: Download Arch .pkg.tar.zst
-        uses: actions/download-artifact@v5
-        with:
-          name: pkg-arch-zst
           path: release-files
 
       - name: Upload Files to Release
