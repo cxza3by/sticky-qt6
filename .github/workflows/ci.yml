@@ -33,52 +33,7 @@ jobs:
           path: src/cpp/build/sticky-1.0.0.bin
           retention-days: 7
 
-  package-arch:
-    runs-on: ubuntu-latest
-    container:
-      image: archlinux:base-devel
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install build deps
-        run: |
-          pacman -Syu --noconfirm
-          pacman -S --noconfirm cmake qt6-base
-      - name: Build on Arch
-        working-directory: src/cpp
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build
-      - name: Create .pkg.tar.zst
-        run: |
-          PKGDIR="$PWD/pkgdir"
-          mkdir -p "$PKGDIR"
-          cmake --install src/cpp/build --prefix "$PKGDIR/usr"
-          mkdir -p "$PKGDIR/usr/share/licenses/sticky"
-          cp LICENSE "$PKGDIR/usr/share/licenses/sticky/"
-          BUILD_DATE=$(date +%s)
-          PKG_SIZE=$(du -sb "$PKGDIR" | awk '{print $1}')
-          {
-            printf 'pkgname = sticky\n'
-            printf 'pkgver = 1.0.0-1\n'
-            printf 'pkgdesc = Simple sticky notes application\n'
-            printf 'url = https://github.com/cxza3by/Sticky\n'
-            printf 'builddate = %s\n' "$BUILD_DATE"
-            printf 'packager = cxza3by <cxza3by@gmail.com>\n'
-            printf 'arch = x86_64\n'
-            printf 'size = %s\n' "$PKG_SIZE"
-            printf 'license = GPL-3.0\n'
-            printf 'depend = qt6-base\n'
-          } > "$PKGDIR/.PKGINFO"
-          bsdtar -czf "$PKGDIR/.MTREE" --format=mtree --options='!all,use-set,type,uid,gid,mode,time,size,sha256,link' -C "$PKGDIR" .
-          PKGNAME="sticky-1.0.0-x86_64"
-          tar -c --zstd -f "${PKGNAME}.pkg.tar.zst" -C "$PKGDIR" .
-          mv "${PKGNAME}.pkg.tar.zst" src/cpp/build/
-      - name: Upload .pkg.tar.zst
-        uses: actions/upload-artifact@v5
-        with:
-          name: pkg-arch-zst
-          path: src/cpp/build/sticky-1.0.0-x86_64.pkg.tar.zst
-          retention-days: 7
+  # Здесь будет package-arch, просто я заебался.
 
   package-deb:
     runs-on: ubuntu-24.04
