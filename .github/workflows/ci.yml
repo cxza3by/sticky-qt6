@@ -11,30 +11,6 @@ env:
   CMAKE_BUILD_TYPE: Release
 
 jobs:
-  cpp-build:
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-22.04, ubuntu-24.04]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v5
-      - name: Install Dependencies
-        run: |
-          sudo apt update
-          sudo apt install -y cmake libgl1-mesa-dev libglu1-mesa-dev freeglut3-dev qt6-base-dev libqt6widgets6
-      - name: Build C++
-        working-directory: src/cpp
-        run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }}
-          cmake --build build
-      - name: Upload binary
-        uses: actions/upload-artifact@v5
-        with:
-          name: Sticky-Bin-${{ matrix.os }}
-          path: src/cpp/build/sticky
-          retention-days: 7
-
   package-bin:
     runs-on: ubuntu-24.04
     steps:
